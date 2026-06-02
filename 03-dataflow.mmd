@@ -1,0 +1,34 @@
+flowchart LR
+  subgraph CLIENT["客户端 iOS"]
+    UI["功能入口 / 付费页 / 账单页"]
+  end
+  subgraph BACKEND["后端 livetranslator"]
+    API["App API：余额 / 功能价格 / 账单 / 房间状态上报"]
+    Settle["结算 settle/apple：会员发点"]
+    KC["Kafka 消费：room_duration"]
+    Calc["计费路由：功能类型 → 单价"]
+    Deduct["双池扣减：先时长后点数"]
+  end
+  subgraph ROOM["房间媒体层"]
+    Captain["captain 网关"]
+    Linker["linker 媒体引擎"]
+  end
+  subgraph STORE["存储"]
+    PStat[("point_use_statistics<br/>点数余额")]
+    PRec[("point_use_record<br/>消费明细")]
+    Dur[("时长卡<br/>lvtrans_duration")]
+  end
+
+  UI -->|查询余额/价格/账单| API
+  UI -->|开启功能| Captain
+  Captain --> Linker
+  Linker -->|增量时长| KC
+  KC --> Calc --> Deduct
+  Deduct --> Dur
+  Deduct --> PStat
+  Deduct -->|明细| PRec
+  Deduct -->|余额不足| Captain
+  API --> PStat
+  API --> PRec
+  API --> Dur
+  Settle --> PStat

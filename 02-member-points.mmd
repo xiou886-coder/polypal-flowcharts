@@ -1,0 +1,19 @@
+sequenceDiagram
+  autonumber
+  participant U as 用户 iOS
+  participant App as polypal-app-ios
+  participant LT as livetranslator
+  participant Apple as Apple IAP
+  participant DB as point_use_statistics
+
+  U->>App: 购买会员
+  App->>Apple: 发起内购
+  Apple-->>App: 支付成功（收据）
+  App->>LT: 上报收据（settle/apple）
+  LT->>Apple: 校验收据
+  Apple-->>LT: 校验通过
+  LT->>LT: GenerateBenefitPoint（2000 点/月）
+  LT->>DB: 逐月写入会员点数（source_type=3）
+  LT-->>App: 发放成功
+  App-->>U: 余额 +2000 点/月
+  Note over LT,DB: 退款时 DeleteRecordByOrderNo 回收对应订单点数

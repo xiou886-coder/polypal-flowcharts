@@ -1,0 +1,22 @@
+sequenceDiagram
+  participant App as iOS App
+  participant Cap as captain / linker
+  participant MQ as Kafka RoomDurationTopic
+  participant Eng as room_duration 消费
+  participant Dur as 时长卡
+  participant Pt as 点数余额
+
+  App->>Cap: 开启功能（建房 start）
+  loop 每分钟（增量时长）
+    Cap->>MQ: 增量时长消息（功能类型 / 秒 / 语言 / 人数）
+    MQ->>Eng: 消费
+    Eng->>Eng: 功能类型 → 单价（转写1 / 直播2 / 同传3）
+    Eng->>Dur: 先扣时长（有则扣）
+    alt 时长不足
+      Eng->>Pt: 扣点数 UpdateSingleUserPoint
+    end
+    alt 时长与点数双双耗尽
+      Eng->>Cap: CloseRoom 关闭会话
+    end
+  end
+  App->>Cap: 结束（stop 上报）
